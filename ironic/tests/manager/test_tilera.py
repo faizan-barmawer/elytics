@@ -23,7 +23,7 @@ import os
 from oslo.config import cfg
 
 from nova import exception
-from nova.openstack.common.db import exception as db_exc
+from ironic.openstack.common.db import exception as db_exc
 from nova.tests.baremetal.db import base as bm_db_base
 from nova.tests.baremetal.db import utils as bm_db_utils
 from nova.tests.image import fake as fake_image

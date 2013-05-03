@@ -26,37 +26,36 @@ import mox
 from oslo.config import cfg
 from testtools import matchers
 
-from nova import exception
-from nova.openstack.common.db import exception as db_exc
-from nova.tests.baremetal.db import base as bm_db_base
-from nova.tests.baremetal.db import utils as bm_db_utils
-from nova.tests.image import fake as fake_image
-from nova.tests import utils
-from nova.virt.baremetal import baremetal_states
-from nova.virt.baremetal import db
-from nova.virt.baremetal import pxe
-from nova.virt.baremetal import utils as bm_utils
-from nova.virt.disk import api as disk_api
-from nova.virt import fake as fake_virt
+from ironic import exception
+from ironic.openstack.common.db import exception as db_exc
+from ironic.tests.db import base as db_base
+from ironic.tests.db import utils as db_utils
+from ironic.tests.image import fake as fake_image
+from ironic.tests import utils
+from ironic import states
+from ironic import db
+from ironic import pxe
+from ironic import utils as bm_utils
+from ironic.virt.disk import api as disk_api
+from ironic.virt import fake as fake_virt
 
 CONF = cfg.CONF
 
 COMMON_FLAGS = dict(
-    firewall_driver='nova.virt.baremetal.fake.FakeFirewallDriver',
+    firewall_driver='ironic.fake.FakeFirewallDriver',
     host='test_host',
 )
 
 BAREMETAL_FLAGS = dict(
-    driver='nova.virt.baremetal.pxe.PXE',
+    driver='ironic.pxe.PXE',
     instance_type_extra_specs=['cpu_arch:test', 'test_spec:test_value'],
-    power_manager='nova.virt.baremetal.fake.FakePowerManager',
-    vif_driver='nova.virt.baremetal.fake.FakeVifDriver',
-    volume_driver='nova.virt.baremetal.fake.FakeVolumeDriver',
-    group='baremetal',
+    power_manager='ironic.fake.FakePowerManager',
+    vif_driver='ironic.fake.FakeVifDriver',
+    volume_driver='ironic.fake.FakeVolumeDriver',
 )
 
 
-class BareMetalPXETestCase(bm_db_base.BMDBTestCase):
+class BareMetalPXETestCase(db_base.BMDBTestCase):
 
     def setUp(self):
         super(BareMetalPXETestCase, self).setUp()
@@ -70,7 +69,7 @@ class BareMetalPXETestCase(bm_db_base.BMDBTestCase):
         self.test_block_device_info = None,
         self.instance = utils.get_test_instance()
         self.test_network_info = utils.get_test_network_info(),
-        self.node_info = bm_db_utils.new_bm_node(
+        self.node_info = db_utils.new_bm_node(
                 service_host='test_host',
                 cpus=4,
                 memory_mb=2048,
@@ -154,7 +153,7 @@ class PXEClassMethodsTestCase(BareMetalPXETestCase):
 
     def test_build_network_config_dhcp(self):
         self.flags(
-                net_config_template='$pybasedir/nova/virt/baremetal/'
+                net_config_template='$pybasedir/ironic/'
                                     'net-dhcp.ubuntu.template',
                 group='baremetal',
             )
@@ -166,7 +165,7 @@ class PXEClassMethodsTestCase(BareMetalPXETestCase):
 
     def test_build_network_config_static(self):
         self.flags(
-                net_config_template='$pybasedir/nova/virt/baremetal/'
+                net_config_template='$pybasedir/ironic/'
                                     'net-static.ubuntu.template',
                 group='baremetal',
             )
@@ -560,7 +559,7 @@ class PXEPublicMethodsTestCase(BareMetalPXETestCase):
         self.flags(pxe_deploy_timeout=1, group='baremetal')
 
         db.bm_node_update(self.context, 1,
-                {'task_state': baremetal_states.DEPLOYING,
+                {'task_state': states.DEPLOYING,
                  'instance_uuid': 'fake-uuid'})
 
         # test timeout
@@ -570,12 +569,12 @@ class PXEPublicMethodsTestCase(BareMetalPXETestCase):
 
         # test DEPLOYDONE
         db.bm_node_update(self.context, 1,
-                {'task_state': baremetal_states.DEPLOYDONE})
+                {'task_state': states.DEPLOYDONE})
         self.driver.activate_node(self.context, self.node, self.instance)
 
         # test no deploy -- state is just ACTIVE
         db.bm_node_update(self.context, 1,
-                {'task_state': baremetal_states.ACTIVE})
+                {'task_state': states.ACTIVE})
         self.driver.activate_node(self.context, self.node, self.instance)
 
         # test node gone
